@@ -9,12 +9,11 @@ import matplotlib.pyplot as plt
 class Tile:
     def __init__(self, position, population = 0, voter_preference = 0, instability = 0, district = -1):
         self.position = position #tuple, 1st element is row, 2nd is column
-
-        self.population = population #population of tile
+        self.population = population
         self.voter_preference = voter_preference #partisanship of territory from -1 to 1
         self.instability = instability #likelyhood of tile being moved to new district from 0 to 1
+        self.district = district #district tile is assigned to
 
-        self.district = district
 
 class Region:
     def __init__(self, dimensions, random_distribution = True, vote_source_points = [], population_source_points = []):
@@ -38,31 +37,23 @@ class Region:
                 self.tiles[row].append(Tile((row, column)))
 
     def simulate_agent_movements(self, agent_starting_pos, agents):
-        #print(self.dimensions[0], self.dimensions[1])
         for agent in agents: #simulate movement for every agent
             agent_pos = [agent_starting_pos[0], agent_starting_pos[1]]
-            #print('starting pos')
-            #print(agent_pos)
-            #print(agent_pos)
+
             for move in range(agent): #make moves until agent has made maximum number of moves
                 while True: #make random moves to adjacent squares, retry if move puts agent in invalid location
                     move = random.choice([(-1, 0), (0, 1), (1, 0), (0, -1)])
                     agent_pos[0] += move[0]
                     agent_pos[1] += move[1]
-                    #print('og')
-                    #print(agent_pos)
+
                     if (0 <= agent_pos[0] and agent_pos[0] < self.dimensions[0]) and (0 <= agent_pos[1] and agent_pos[1] < self.dimensions[1]): #break if agent location is valid
-                        #print('filtered')
-                        #print(agent_pos[0], agent_pos[1])
                         break
 
                     else: #undo previous move if agent move is not valid
                         agent_pos[0] -= move[0]
                         agent_pos[1] -= move[1]
-            #print('final pos')
-            #print(agent_pos)
-            self.tiles[agent_pos[0]][agent_pos[1]].population += 1 #once agent location is finalized add to tile population
 
+            self.tiles[agent_pos[0]][agent_pos[1]].population += 1 #once agent location is finalized add to tile population
 
     def assign_tile_populations(self):                
         if self.random_distribution:
@@ -81,7 +72,6 @@ class Region:
 
                 self.simulate_agent_movements((source_point[0], source_point[1]), agents) #move each agent to final location
                 
-
     def calculate_voter_preference(self, position, vote_source_points):
         voter_preference = 0
         for source_point in vote_source_points:
@@ -94,7 +84,6 @@ class Region:
             voter_preference = min(1, voter_preference)
 
         return round(voter_preference, 2)
-
 
     def assign_tile_voter_preferences(self):
         if self.random_distribution: #if source points need to be generated
@@ -113,13 +102,13 @@ class Region:
         red_total = 0
         for tile_row in self.tiles:
             for tile in tile_row:
-                if tile.voter_preference < 0:
+                if tile.voter_preference < 0: #if tile blue add it to blue impact
                     blue_total -= tile.voter_preference * tile.population
                     
-                else:
+                else: #else add to red impact
                     red_total += tile.voter_preference * tile.population
 
-        return blue_total * (100 / (blue_total + red_total)), red_total * (100 / (blue_total + red_total))
+        return blue_total * (100 / (blue_total + red_total)), red_total * (100 / (blue_total + red_total)) #convert blue impact and red impact into percentages
 
     def display_region(self, filter = False, filter_list = []):
         #create 3d bar graph representing region
@@ -157,8 +146,8 @@ class Region:
                 else:
                     colors.append((1, 1, 1))
 
-        ax1.bar3d(x_pos, y_pos, z_pos, dxy, dxy, dz, color = colors) 
-        plt.show() #display graph 
+        ax1.bar3d(x_pos, y_pos, z_pos, dxy, dxy, dz, color = colors) #generate graph
+        plt.show()
             
 
 
@@ -169,33 +158,3 @@ if __name__ == '__main__':
     region.assign_tile_voter_preferences() #generate voter preferences
     print(region.return_voter_split())
     region.display_region()
-    """
-    #create 3d bar graph representing region
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111, projection = '3d')
-
-
-    x_pos = np.arange(0, region.dimensions[0], 1)
-    y_pos = np.arange(0, region.dimensions[1], 1)
-    x_pos, y_pos = np.meshgrid(x_pos, y_pos)
-    x_pos = x_pos.flatten()
-    y_pos = y_pos.flatten()
-    z_pos = [0] * region.dimensions[0] * region.dimensions[1]
-
-    dxy = [1] * region.dimensions[0] * region.dimensions[1] #xy size of each bar
-    dz = [region.tiles[i][j].population for i in range(region.dimensions[0]) for j in range(region.dimensions[1])] #z height of each bar
-
-    colors = []
-    for row in region.tiles: #assign each bar color based on voter preference
-        for tile in row:
-            if tile.voter_preference < 0:
-                colors.append(((1+tile.voter_preference)/1.16, (1+tile.voter_preference)/1.16, 1, 1))
-
-            else:
-                colors.append((1, (1-tile.voter_preference)/1.16, (1-tile.voter_preference)/1.16, 1))
-
-    ax1.bar3d(x_pos, y_pos, z_pos, dxy, dxy, dz, color = colors) 
-    plt.show() #display graph 
-    """
-
-

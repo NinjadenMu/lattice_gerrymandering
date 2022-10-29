@@ -41,12 +41,7 @@ class Gerrymander:
 
         self.districts = districts
 
-        #self.region.display_region()
-        #for district in districts:
-            #self.region.display_region(True, district)
-
-
-    def score_district(self, num_districts, first_eval = True, pop_deltas = []):
+    def score_district(self, num_districts, edge_tiles, first_eval = True, pop_deltas = []):
         if first_eval:
             self.populations = [0 for district in range(num_districts)]
 
@@ -54,97 +49,169 @@ class Gerrymander:
                 for tile in row:
                     self.populations[tile.district] += tile.population
 
-        else:
-            for i, delta in enumerate(pop_deltas):
-                self.populations[i] += delta
+            district_perimeters_to_area = [0 for district in range(len(self.districts))]
+            for district in range(len(self.districts)):
+                for edge_tile in edge_tiles:
+                    if edge_tile[0].district == district:
+                        district_perimeters_to_area[district] += 1
 
-        total_deviation = 0
-        average = sum(self.populations) / num_districts
-        for population in self.populations:
-            total_deviation += (population - average) ** 2
+                district_perimeters_to_area[district] /= len(self.districts[district])
 
-        std_dev = math.sqrt(total_deviation)
 
-        if first_eval:
-            pass
+        std_dev = sum([(sum(self.populations) / len(self.populations) - pop) ** 2 for pop in self.populations]) ** 0.5
+        
+        district_voter_preferences = [0 for district in range(num_districts)]
+        for district in range(num_districts):
+            for tile in self.districts[district]:
+                district_voter_preferences[district] += tile.voter_preference
 
-        else:
-            for i, delta in enumerate(pop_deltas):
-                self.populations[i] -= delta
+            if district_voter_preferences[district] < 0:
+                district_voter_preferences[district] = -1
 
-        return std_dev
+            elif district_voter_preferences[district] > 0:
+                district_voter_preferences[district] = 1
 
-    def get_edge_tiles(self,first_pass = True):
+        return std_dev + 300 * sum(district_perimeters_to_area) / len(district_perimeters_to_area) + 10000 * sum(district_voter_preferences)
+
+    def get_edge_tiles(self, first_pass = True, flipped_tile = None, prev_edge_tiles = []):
         if first_pass:        
             edge_tiles = []
             for row in self.region.tiles:
                 for tile in row:
                     edge_tile_data = []
-                    if (tile.position[0] + 1) < region.dimensions[0] and (tile.position[1] + 1) < region.dimensions[1] and self.region.tiles[tile.position[0] + 1][tile.position[1] + 1].district != tile.district:
-                        edge_tile_data.append(self.region.tiles[tile.position[0] + 1][tile.position[1] + 1].district)
+                    if (tile.position[0] + 1) < region.dimensions[0] and (tile.position[1]) < region.dimensions[1] and self.region.tiles[tile.position[0] + 1][tile.position[1]].district != tile.district:
+                        edge_tile_data.append(self.region.tiles[tile.position[0] + 1][tile.position[1]].district)
 
-                    if (tile.position[0] - 1) >= 0 and (tile.position[1] - 1) >= 0 and self.region.tiles[tile.position[0] - 1][tile.position[1] - 1].district != tile.district:
-                        edge_tile_data.append(self.region.tiles[tile.position[0] - 1][tile.position[1] - 1].district)
+                    if (tile.position[0] - 1) >= 0 and (tile.position[1]) >= 0 and self.region.tiles[tile.position[0] - 1][tile.position[1]].district != tile.district:
+                        edge_tile_data.append(self.region.tiles[tile.position[0] - 1][tile.position[1]].district)
 
-                    if (tile.position[0] - 1) >= 0 and (tile.position[1] + 1) < region.dimensions[1] and self.region.tiles[tile.position[0] - 1][tile.position[1] + 1].district != tile.district:
-                        edge_tile_data.append(self.region.tiles[tile.position[0] - 1][tile.position[1] + 1].district)
+                    if (tile.position[0]) >= 0 and (tile.position[1] + 1) < region.dimensions[1] and self.region.tiles[tile.position[0]][tile.position[1] + 1].district != tile.district:
+                        edge_tile_data.append(self.region.tiles[tile.position[0]][tile.position[1] + 1].district)
 
-                    if (tile.position[0] + 1) < region.dimensions[0] and (tile.position[1] - 1) >= 0 and self.region.tiles[tile.position[0] + 1][tile.position[1] - 1].district != tile.district:
-                        edge_tile_data.append(self.region.tiles[tile.position[0] + 1][tile.position[1] - 1].district)
+                    if (tile.position[0]) < region.dimensions[0] and (tile.position[1] - 1) >= 0 and self.region.tiles[tile.position[0]][tile.position[1] - 1].district != tile.district:
+                        edge_tile_data.append(self.region.tiles[tile.position[0]][tile.position[1] - 1].district)
 
                     if edge_tile_data != []:
                         edge_tile_data.insert(0, tile)
                         edge_tiles.append(edge_tile_data)
 
-        #lse:
+        else:
+            neighbours = [flipped_tile]
+            for edge in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
+                if flipped_tile.position[0] + edge[0] >= 0 and flipped_tile.position[0] + edge[0] < self.region.dimensions[0] and flipped_tile.position[1] + edge[1] >=0 and flipped_tile.position[1] + edge[1] < self.region.dimensions[1]:
+                    neighbours.append(self.region.tiles[flipped_tile.position[0] + edge[0]][flipped_tile.position[1] + edge[1]])
+
+            i = 0
+            while i < len(prev_edge_tiles):
+                tile_on = prev_edge_tiles[i][0]
+                if tile_on in neighbours:
+                    prev_edge_tiles.pop(i)
+                    i -= 1
+
+                i += 1
+
+            for tile in neighbours:
+                edge_tile_data = []
+                if (tile.position[0] + 1) < region.dimensions[0] and (tile.position[1]) < region.dimensions[1] and self.region.tiles[tile.position[0] + 1][tile.position[1]].district != tile.district:
+                    edge_tile_data.append(self.region.tiles[tile.position[0] + 1][tile.position[1]].district)
+
+                if (tile.position[0] - 1) >= 0 and (tile.position[1]) >= 0 and self.region.tiles[tile.position[0] - 1][tile.position[1]].district != tile.district:
+                    edge_tile_data.append(self.region.tiles[tile.position[0] - 1][tile.position[1]].district)
+
+                if (tile.position[0]) >= 0 and (tile.position[1] + 1) < region.dimensions[1] and self.region.tiles[tile.position[0]][tile.position[1] + 1].district != tile.district:
+                    edge_tile_data.append(self.region.tiles[tile.position[0]][tile.position[1] + 1].district)
+
+                if (tile.position[0]) < region.dimensions[0] and (tile.position[1] - 1) >= 0 and self.region.tiles[tile.position[0]][tile.position[1] - 1].district != tile.district:
+                    edge_tile_data.append(self.region.tiles[tile.position[0]][tile.position[1] - 1].district)
+
+                if edge_tile_data != []:
+                    edge_tile_data.insert(0, tile)
+                    prev_edge_tiles.append(edge_tile_data)   
+
+            edge_tiles = prev_edge_tiles       
 
         return edge_tiles
 
     def dfs(self, visited, node_on, district):
-        if len(visited) == len(district) - 1:
+        if len(visited) >= len(district):
             return True
 
-        edges = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+        edges = [(1, 0), (0, 1), (-1, 0), (0, -1)]
 
         for edge in edges:
-            
+            if node_on.position[0] + edge[0] >= 0 and node_on.position[0] + edge[0] < self.region.dimensions[0] and node_on.position[1] + edge[1] >=0 and node_on.position[1] + edge[1] < self.region.dimensions[1]:
+                if self.region.tiles[node_on.position[0] + edge[0]][node_on.position[1] + edge[1]].district == node_on.district and self.region.tiles[node_on.position[0] + edge[0]][node_on.position[1] + edge[1]] not in visited:
+                    visited.append(self.region.tiles[node_on.position[0] + edge[0]][node_on.position[1] + edge[1]])    
+                    if self.dfs(visited, self.region.tiles[node_on.position[0] + edge[0]][node_on.position[1] + edge[1]], district):
+                        return True
+        #self.region.display_region(True, visited)
+        return False
 
     def check_if_continuous(self, district):
-
+        return self.dfs([district[0]], district[0], district)
 
     def mcmc(self, num_districts):
-        total_time = 0
+        start = time.perf_counter()
         self.voronoi_districts(num_districts)
-        print(self.score_district(num_districts))
 
-        for i in range(1000):
-            original_score = self.score_district(num_districts)
-            start = time.perf_counter()
-            tile_to_flip = random.choice(self.get_edge_tiles(True))
-            stop = time.perf_counter()
-            total_time += stop - start
+        for i in range(5000):
+            if i == 0:
+                edge_tiles = self.get_edge_tiles(True)
+
+            elif use_from_eval:
+                edge_tiles = eval_edge_tiles
+                use_from_eval = False
+
+            else: 
+                edge_tiles = self.get_edge_tiles(False, tile_to_flip[0], edge_tiles)
+
+            tile_to_flip = random.choices(edge_tiles, weights = [len(edge_tile) for edge_tile in edge_tiles], k = 1)[0]
+
+            original_score = self.score_district(num_districts, edge_tiles)
+            if i == 0:
+                print(original_score)
+
             original_district = tile_to_flip[0].district
 
             tile_to_flip[0].district = random.choice(tile_to_flip[1:])
             self.districts[original_district].remove(tile_to_flip[0])
-            self.districts[tile_to_flip[0].district].append(tile_to_flip[0])
+            if self.check_if_continuous(self.districts[original_district]):
+                use_from_eval = True
+                self.districts[tile_to_flip[0].district].append(tile_to_flip[0])
+                eval_edge_tiles = self.get_edge_tiles(False, tile_to_flip[0], edge_tiles)
+                new_score = self.score_district(num_districts, eval_edge_tiles)
+                #print(original_score, new_score)
+                if original_score < new_score and random.random() >= 0:
+                    self.districts[original_district].append(tile_to_flip[0])
+                    self.districts[tile_to_flip[0].district].remove(tile_to_flip[0])
+                    tile_to_flip[0].district = original_district
+                    use_from_eval = False
 
-            new_score = self.score_district(num_districts)
-
-            if original_score < new_score and random.random() > 0.4:
-                self.districts[original_district].append(tile_to_flip[0])
-                self.districts[tile_to_flip[0].district].remove(tile_to_flip[0])
+            else:
                 tile_to_flip[0].district = original_district
+                self.districts[original_district].append(tile_to_flip[0])
         
-        print(self.score_district(num_districts))
-        print(total_time)
+        print(self.score_district(num_districts, edge_tiles))
+        print(time.perf_counter() - start)
+        total_pop = 0
         districts = [[] for district in range(num_districts)]
         for row in self.region.tiles:
             for tile in row:
-                districts[tile.district].append(tile)
+                total_pop += tile.population
+
+        print(total_pop)
+
+        district_voter_preferences = [0 for district in range(num_districts)]
+        for district in range(num_districts):
+            for tile in self.districts[district]:
+                district_voter_preferences[district] += tile.voter_preference
+
+        print(district_voter_preferences)
 
         self.region.display_region()
-        for district in districts:
+        for district in self.districts:
+            #print(1)
+            print(self.check_if_continuous(district))
             self.region.display_region(True, district)
     
 
@@ -155,4 +222,4 @@ class Gerrymander:
 
 
 gerrymander = Gerrymander(region, 'red')
-gerrymander.mcmc(5)
+gerrymander.mcmc(6)
