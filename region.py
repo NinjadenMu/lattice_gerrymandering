@@ -110,7 +110,7 @@ class Region:
 
         return blue_total * (100 / (blue_total + red_total)), red_total * (100 / (blue_total + red_total)) #convert blue impact and red impact into percentages
 
-    def display_region(self, filter = False, filter_list = []):
+    def display_region(self, filter = False, filter_list = []): #if filter is True only display tiles in filter_list
         #create 3d bar graph representing region
         fig = plt.figure()
         ax1 = fig.add_subplot(111, projection = '3d')
