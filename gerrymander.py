@@ -184,6 +184,7 @@ class Gerrymander:
     def mcmc(self, iters): #simulated anneal based algorithm for gerrymandering
         self.voronoi_districts() #generate initial districting
 
+        use_from_eval = False
         for i in range(iters):
             if i == 0: #get edge tiles naively
                 edge_tiles = self.get_edge_tiles(True)
@@ -217,7 +218,7 @@ class Gerrymander:
                 eval_edge_tiles = self.get_edge_tiles(False, tile_to_flip[0], edge_tiles) # finish flipping tile
                 new_score = self.score_district(eval_edge_tiles, True) 
 
-                if original_score < new_score and random.random() >= 0.5 - 0.5 / iters * i: #if new districting worse, then undo with certain probability increasing as number of iterations increases
+                if original_score < new_score and random.random() >= 0.5 - 0.5 / iters ** 0.5 * i ** 0.5: #if new districting worse, then undo with certain probability increasing as number of iterations increases
                     self.districts[original_district].append(tile_to_flip[0])
                     self.districts[tile_to_flip[0].district].remove(tile_to_flip[0])
                     tile_to_flip[0].district = original_district
@@ -243,15 +244,7 @@ class Gerrymander:
 
             print(district_result)
             self.region.display_region(True, district)
-
-        print(district_count)
     
-
-
-
-
-        
-
-
-gerrymander = Gerrymander(region, 1, 6, [0.05, 0.05, 0.05, 0.05, 0.05, -0.3]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
-gerrymander.mcmc(10000) #run algorithm, more iters gives better result but takes longer
+if __name__ == '__main__':
+    gerrymander = Gerrymander(region, 1, 6, [0.05, 0.05, 0.05, 0.05, 0.05, -0.3]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
+    gerrymander.mcmc(10000) #run algorithm, more iters gives better result but takes longer
