@@ -186,7 +186,7 @@ class Gerrymander:
 
         use_from_eval = False
         for i in range(iters):
-            if i == 0: #get edge tiles naively
+            if i == 0: #get edge tiles from scratch
                 edge_tiles = self.get_edge_tiles(True)
                 overall_voter_preference = 0
                 for row in region.tiles:
@@ -244,6 +244,7 @@ class Gerrymander:
 
             print(district_result)
             self.region.display_region(True, district)
+            
     
 if __name__ == '__main__':
     gerrymander = Gerrymander(region, 1, 6, [0.05, 0.05, 0.05, 0.05, 0.05, -0.3]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
