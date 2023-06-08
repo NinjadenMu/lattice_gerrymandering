@@ -13,6 +13,7 @@ for row in region.tiles: #give all tiles equal populations - only good for visua
     for tile in row:
         tile.population = 10
 """
+
 class Gerrymander:
     def __init__(self, region, party, num_districts, curve):
         self.region = region
@@ -87,7 +88,7 @@ class Gerrymander:
             std_dev = sum([(sum(self.populations) / len(self.populations) - pop) ** 2 for pop in self.populations]) ** 0.5 #calculate std deviation of pop between districts, want districts to have similar pops
             
             district_voter_preferences = [0 for district in range(self.num_districts)]
-            for district in range(self.num_districts): # calcualte actual district voter preference curve
+            for district in range(self.num_districts): # calculate actual district voter preference curve
                 for tile in self.districts[district]:
                     district_voter_preferences[district] += tile.voter_preference * tile.population
 
@@ -181,7 +182,7 @@ class Gerrymander:
 
         return self.dfs([district[0]], district[0], district)
 
-    def mcmc(self, iters): #simulated anneal based algorithm for gerrymandering
+    def simulated_anneal(self, iters): #simulated anneal based algorithm for gerrymandering
         self.voronoi_districts() #generate initial districting
 
         use_from_eval = False
@@ -247,5 +248,5 @@ class Gerrymander:
             
     
 if __name__ == '__main__':
-    gerrymander = Gerrymander(region, 1, 6, [0.05, 0.05, 0.05, 0.05, 0.05, -0.3]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
-    gerrymander.mcmc(10000) #run algorithm, more iters gives better result but takes longer
+    gerrymander = Gerrymander(region, 1, 5, [0.05, 0.05, 0.05, 0.05, -0.25]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
+    gerrymander.simulated_anneal(10000) #run algorithm, more iters gives better result but takes longer
