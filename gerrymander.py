@@ -15,9 +15,9 @@ for row in region.tiles: #give all tiles equal populations - only good for visua
 """
 
 class Gerrymander:
-    def __init__(self, region, party, num_districts, curve):
+    def __init__(self, region, num_districts, curve):
         self.region = region
-        self.party = party #party to favor, overall + (red) or - (blue)
+        #self.party = party #party to favor, overall + (red) or - (blue)
         self.curve_sorted = False
         self.num_districts = num_districts
         self.curve = curve #target voter preference for each district
@@ -248,5 +248,5 @@ class Gerrymander:
             
     
 if __name__ == '__main__':
-    gerrymander = Gerrymander(region, 1, 5, [0.05, 0.05, 0.05, 0.05, -0.25]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
+    gerrymander = Gerrymander(region, 5, [0.05, 0.05, 0.05, 0.05, -0.25]) #to make algorithm favor party, set curve such that more numbers have same sign as that party, but with smaller magnitudes, and fewer with the sign of the opposite party but larger magnitudes.  this ensures more districts will be won by the favored party.
     gerrymander.simulated_anneal(10000) #run algorithm, more iters gives better result but takes longer
